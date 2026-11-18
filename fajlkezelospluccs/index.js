@@ -1,55 +1,83 @@
+const mysql = require("mysql");
 const fs = require("node:fs");
 const express = require("express");
-const sql = require("mysql");
+
 const app = express();
 const PORT = 3000;
 
 app.use(express.json());
 
-const db = sql.createConnection({
-  host: "localhost",
-  user: "root",
-  database: "cntunnels",
-});
+let db;
+
+async function adatbazisKapcsolat() {
+  db = mysql.createConnection({
+    host: "localhost",
+    user: "root",
+    password: "",
+    database: "cntunnels",
+  });
+
+  db.connect((err) => {
+    if (err) {
+      console.log("Adatbázis kapcsolódási hiba:", err);
+      return;
+    }
+
+    console.log("Connected!");
+  });
+}
 
 app.listen(PORT, async () => {
+  await adatbazisKapcsolat();
   console.log(`Server is running on http://localhost:${PORT}`);
-  await csvFeltoltes();
 });
 
-var adatok = [];
+app.get("/import", async (req, res) => {
+  db.query(
+    "CREATE TABLE IF NOT EXISTS tunnels (id INT AUTO_INCREMENT PRIMARY KEY, nev TEXT, hossz INT, ev TEXT, tartomany TEXT)",
+    (err) => {
+      if (err) return res.status(500).send(err.message);
 
-async function csvFeltoltes() {
-  try {
-    const data = fs.readFileSync("CNtunnels.csv", "utf8");
-    adatok = data.trim().split("\n").splice(1);
+      const data = fs.readFileSync("CNtunnels.csv", "utf8");
+      const adatok = data.trim().split("\n");
 
-    await db.query("DROP TABLE IF EXISTS tunnels", (err, result) => {
-      if (err) throw err;
-      else console.log("Tablazat sikeresen torolve");
-    });
+      adatok.shift();
 
-    await db.query(
-      "CREATE TABLE IF NOT EXISTS tunnels (nev TEXT, hossz INT, ev TEXT, tartomany TEXT)",
-      (err, result) => {
-        if (err) throw err;
-        else console.log("Tablazat sikeresen letrehozva");
-      },
-    );
+      let feldolgozva = 0;
 
-    for (const sor of adatok) {
-      const [nev, hossz, ev, tartomany] = sor.split(";");
+      for (const sor of adatok) {
+        const oszlopok = sor.split(";");
 
-      await db.query(
-        "INSERT INTO tunnels (nev, hossz, ev, tartomany) VALUES (?, ?, ?, ?)",
-        [nev, hossz, ev, tartomany],
-        (err, result) => {
-          if (err) throw err;
-        },
-      );
+        db.query(
+          "INSERT INTO tunnels (nev, hossz, ev, tartomany) VALUES (?, ?, ?, ?)",
+          [oszlopok[0], Number(oszlopok[1]), oszlopok[2], oszlopok[3]],
+          (err) => {
+            if (err) {
+              console.log(err);
+            }
+
+            feldolgozva++;
+
+            if (feldolgozva === adatok.length) {
+              res.send("Adatok feltöltve!");
+            }
+          },
+        );
+      }
+
+      if (adatok.length === 0) {
+        res.send("Nincs feltöltendő adat!");
+      }
+    },
+  );
+});
+
+app.get("/tunnels", (req, res) => {
+  db.query("SELECT * FROM tunnels", (err, results) => {
+    if (err) {
+      return res.status(500).send(err.message);
     }
-    console.log("Sikeresen feltoltve");
-  } catch (err) {
-    console.log(err);
-  }
-}
+
+    res.json(results);
+  });
+});
