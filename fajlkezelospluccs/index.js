@@ -22,7 +22,7 @@ async function adatbazisKapcsolat() {
       return;
     }
 
-    console.log("Connected!");
+    console.log("Csatlakozva!");
 
     db.query("CREATE DATABASE IF NOT EXISTS cntunnels", (err) => {
       if (err) {
@@ -70,10 +70,11 @@ app.get("/import", async (req, res) => {
             if (err) {
               console.log(err);
             }
-
+            console.log("Adat beszúrva!");
             feldolgozva++;
 
             if (feldolgozva === adatok.length) {
+              console.log("Összes adat feltöltve!");
               res.send("Adatok feltöltve!");
             }
           },
