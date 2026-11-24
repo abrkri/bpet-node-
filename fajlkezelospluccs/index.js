@@ -65,12 +65,16 @@ app.get("/import", async (req, res) => {
 
         db.query(
           "INSERT INTO tunnels (nev, hossz, ev, tartomany) VALUES (?, ?, ?, ?)",
-          [oszlopok[0], Number(oszlopok[1]), oszlopok[2], oszlopok[3]],
+          [
+            oszlopok[0].trim(),
+            Number(oszlopok[1].trim()),
+            oszlopok[2].trim(),
+            oszlopok[3].trim(),
+          ],
           (err) => {
             if (err) {
               console.log(err);
             }
-            console.log("Adat beszúrva!");
             feldolgozva++;
 
             if (feldolgozva === adatok.length) {
@@ -89,11 +93,39 @@ app.get("/import", async (req, res) => {
 });
 
 app.get("/tunnels", (req, res) => {
-  db.query("SELECT * FROM tunnels", (err, results) => {
-    if (err) {
-      return res.status(500).send(err.message);
-    }
+  const id = req.query.id;
+  if (!id) {
+    db.query("SELECT * FROM tunnels", (err, results) => {
+      if (err) {
+        return res.status(500).send(err.message);
+      }
 
-    res.json(results);
+      res.json(results);
+    });
+  } else {
+    db.query("SELECT * FROM tunnels WHERE id = ?", [id], (err, results) => {
+      if (err) {
+        return res.status(500).send(err.message);
+      }
+      res.json(results);
+    });
+  }
+});
+
+app.get("/uc", (req, res) => {
+  db.query("SELECT * FROM tunnels WHERE ev = 'UC'", (err, results) => {
+    if (err) return res.status(500).send(err.message);
+
+    res.send("epites alatt: " + results.length);
   });
+});
+
+app.get("/longest", (req, res) => {
+  db.query(
+    "SELECT * FROM tunnels ORDER BY hossz DESC LIMIT 1",
+    (err, results) => {
+      if (err) return res.status(500).send(err.message);
+      res.json(results);
+    },
+  );
 });
