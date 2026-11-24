@@ -14,7 +14,6 @@ async function adatbazisKapcsolat() {
     host: "localhost",
     user: "root",
     password: "",
-    database: "cntunnels",
   });
 
   db.connect((err) => {
@@ -24,6 +23,22 @@ async function adatbazisKapcsolat() {
     }
 
     console.log("Connected!");
+
+    db.query("CREATE DATABASE IF NOT EXISTS cntunnels", (err) => {
+      if (err) {
+        console.log("Adatbázis létrehozási hiba:", err);
+        return;
+      }
+
+      db.query("USE cntunnels", (err) => {
+        if (err) {
+          console.log("Adatbázis kiválasztási hiba:", err);
+          return;
+        }
+
+        console.log("Adatbázis kiválasztva!");
+      });
+    });
   });
 }
 
