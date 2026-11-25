@@ -47,7 +47,7 @@ app.listen(PORT, async () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
 
-app.get("/import", async (req, res) => {
+app.get("/import", (req, res) => {
   db.query(
     "CREATE TABLE IF NOT EXISTS tunnels (id INT AUTO_INCREMENT PRIMARY KEY, nev TEXT, hossz INT, ev TEXT, tartomany TEXT)",
     (err) => {
@@ -128,4 +128,8 @@ app.get("/longest", (req, res) => {
       res.json(results);
     },
   );
+});
+
+app.get("/", (req, res) => {
+  res.send("<h1>Hello World!</h1>");
 });
